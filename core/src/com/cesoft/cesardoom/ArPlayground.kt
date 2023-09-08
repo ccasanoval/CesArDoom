@@ -46,9 +46,10 @@ class ArPlayground: GdxArApplicationListener() {
 
 private var animation: AnimationComponent? = null
 private val animationName = "basic"
-    private val idle = Pair(10f, 110f-10)
-    private val walk = Pair(120f, 160f-120)
-    private val attack = Pair(420f, 500f-420)
+private val speed = 1f
+    private val idle = Pair(10f/60f, 110f/60f)
+    private val walk = Pair(120f/60f, 160f/60f)
+    private val attack = Pair(420f/60f, 500f/60f)
 //        IDLE(10-110)
 //        WALK(120-160)
 //        SCREAM(170-270)
@@ -230,7 +231,7 @@ private val animationName = "basic"
 
         val modelInstance = modelScene!!.modelInstance//ModelInstance(modelAsset!!.scene.model)
         animation = AnimationComponent(modelInstance)
-        animation!!.animate(AnimationParams(animationName, 0, 1f, idle.first, idle.second))
+        animation!!.animate(AnimationParams(animationName, -1, speed, walk.first, walk.second-walk.first))
 
         sceneManager.addScene(groundFloor)
     }
