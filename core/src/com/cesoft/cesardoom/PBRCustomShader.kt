@@ -4,9 +4,11 @@ import com.badlogic.gdx.graphics.g3d.Attributes
 import com.badlogic.gdx.graphics.g3d.Renderable
 import net.mgsx.gltf.scene3d.shaders.PBRShader
 
-
-class PBRCustomShader(renderable: Renderable?, config: Config?, prefix: String?) :
-    PBRShader(renderable, config, prefix) {
+class PBRCustomShader(
+    renderable: Renderable?,
+    config: Config?,
+    prefix: String?
+): PBRShader(renderable, config, prefix) {
     private var u_sphericalHarmonics = 0
     override fun init() {
         super.init()

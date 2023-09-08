@@ -17,17 +17,16 @@ class PBRShadowCatcherShaderProvider(config: PBRShaderConfig?) : PBRShaderProvid
         config: PBRShaderConfig,
         prefix: String
     ): PBRShader {
-        var prefix: String? = prefix
+        var prefix2: String? = prefix
         if (renderable.environment.has(SphericalHarmonicsAttribute.Coefficients)) {
-            prefix += "#define sphericalHarmonicsFlag\n"
+            prefix2 += "#define sphericalHarmonicsFlag\n"
         }
-        return PBRCustomShader(renderable, config, prefix)
+        return PBRCustomShader(renderable, config, prefix2)
     }
 
     override fun getShader(renderable: Renderable): Shader {
         if (renderable.userData is ShaderType) {
-            val type = renderable.userData as ShaderType
-            return when (type) {
+            return when (renderable.userData as ShaderType) {
                 ShaderType.PBR -> super.getShader(renderable)
                 ShaderType.SHADOW_CATCHER -> shadowCatcherShaderProvider.getShader(renderable)
             }

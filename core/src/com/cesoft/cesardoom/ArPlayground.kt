@@ -35,7 +35,7 @@ class ArPlayground: GdxArApplicationListener() {
     private lateinit var sceneManager: CustomSceneManager
     private lateinit var directionalLight: CustomDirectionalShadowLight
     private var modelScene: Scene? = null
-//    private var groundFloor: Scene? = null
+    private var groundFloor: Scene? = null
     private var modelAsset: SceneAsset? = null
 
     private val targetDir = Quaternion()
@@ -47,12 +47,25 @@ class ArPlayground: GdxArApplicationListener() {
     private val modelInstances = LongMap<ModelInstance>()
 
     override fun create() {
+        createEnvironment()
+        createFloor()
+        createMonster()
+
         //Setup some configs
         arAPI.setPowerSaveMode(false)
         arAPI.setAutofocus(true)
         arAPI.enableSurfaceGeometry(true)
+        //Start AR!
+        arAPI.setRenderAR(true)
+    }
 
-        //Setup glTF rendering environment
+    //Load monster model
+    private fun createMonster() {
+        modelAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
+    }
+
+    //Setup glTF rendering environment
+    private fun createEnvironment() {
         val config = PBRShaderProvider.createDefaultConfig()
         config.numBones = 40
         config.manualSRGB = PBRShaderConfig.SRGB.NONE
@@ -65,19 +78,11 @@ class ArPlayground: GdxArApplicationListener() {
             PBRDepthShaderProvider(depthConfig)
         )
         directionalLight = CustomDirectionalShadowLight(2048, 2048)
-        directionalLight.direction.set(1f, -3f, 1f).nor()
+        directionalLight.direction.set(1f, -3f, 1f).nor()//Direction adapted by camera later: GdxLightEstimationMode.ENVIRONMENTAL_HDR
         directionalLight.color.set(Color.WHITE)
         sceneManager.environment.add(directionalLight)
         val iblBuilder = IBLBuilder.createOutdoor(directionalLight)
-//        val diffuseCubemap = EnvironmentUtil.createCubemap(
-//            InternalFileHandleResolver(),
-//            "diffuse/diffuse_", "_0.jpg", EnvironmentUtil.FACE_NAMES_NEG_POS
-//        )
         val diffuseCubemap = iblBuilder.buildIrradianceMap(256);
-//        val specularCubemap = EnvironmentUtil.createCubemap(
-//            InternalFileHandleResolver(),
-//            "specular/specular_", "_", ".jpg", 10, EnvironmentUtil.FACE_NAMES_NEG_POS
-//        )
         val specularCubemap = iblBuilder.buildRadianceMap(10);
         iblBuilder.dispose()
         val brdfLUT = Texture(Gdx.files.classpath("net/mgsx/gltf/shaders/brdfLUT.png"))
@@ -94,41 +99,6 @@ class ArPlayground: GdxArApplicationListener() {
             SphericalHarmonicsAttribute(SphericalHarmonicsAttribute.Coefficients)
         )
 
-        //Create a plane model for the virtual ground floor, need to show shadows
-        builder.begin()
-//        val groundMaterial = Material(BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA))
-//        val meshPartBuilder = builder.part(
-//            "ground",
-//            GL20.GL_TRIANGLES,
-//            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
-//            groundMaterial
-//        )
-//        val size = 3f
-//        meshPartBuilder.rect(
-//            -size / 2f,
-//            0f,
-//            -size / 2f,
-//            -size / 2f,
-//            0f,
-//            size / 2f,
-//            size / 2f,
-//            0f,
-//            size / 2f,
-//            size / 2f,
-//            0f,
-//            -size / 2f,
-//            0f,
-//            0f,
-//            0f
-//        )
-//        val ground = ModelInstance(builder.end())
-//        ground.userData = PBRShadowCatcherShaderProvider.ShaderType.SHADOW_CATCHER
-//        groundFloor = Scene(ground)
-
-        //Load AR Model
-        //modelAsset = GLBLoader().load(Gdx.files.internal("BrainStem.glb"))
-        modelAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
-
         //Setup glTF -> AR Bind
         sceneManager.setCamera(arAPI.arCamera)
         directionalLight.setViewport(
@@ -136,14 +106,34 @@ class ArPlayground: GdxArApplicationListener() {
             6f,
             sceneManager.camera.near,
             sceneManager.camera.far)
+    }
 
-        //Start AR!
-        arAPI.setRenderAR(true)
+    //Create a plane model for the virtual ground floor, need to show shadows
+    private fun createFloor() {
+        builder.begin()
+        val groundMaterial = Material(BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA))
+        val meshPartBuilder = builder.part(
+            "ground",
+            GL20.GL_TRIANGLES,
+            (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong(),
+            groundMaterial
+        )
+        val size = 3f
+        meshPartBuilder.rect(
+            -size / 2f, 0f, -size / 2f,
+            -size / 2f, 0f, size / 2f,
+            size / 2f, 0f, size / 2f,
+            size / 2f, 0f, -size / 2f,
+            0f, 0f, 0f
+        )
+        val ground = ModelInstance(builder.end())
+        ground.userData = PBRShadowCatcherShaderProvider.ShaderType.SHADOW_CATCHER
+        groundFloor = Scene(ground)
     }
 
     override fun renderARModels(frame: GdxFrame) {
         //Update environment light based on AR frame
-        when (frame.lightEstimationMode) {
+        when(frame.lightEstimationMode) {
             GdxLightEstimationMode.ENVIRONMENTAL_HDR -> {
                 sceneManager.setAmbientLight(frame.sphericalHarmonics)
                 directionalLight.direction.set(
@@ -175,7 +165,7 @@ class ArPlayground: GdxArApplicationListener() {
             val scale = 0.015f
             modelScene.modelInstance.transform.scale(scale, scale, scale)
         }
-//        groundFloor?.modelInstance?.transform?.set(transform.translation, transform.rotation)
+        groundFloor?.modelInstance?.transform?.set(transform.translation, transform.rotation)
 
         sceneManager.update(Gdx.graphics.deltaTime)
         sceneManager.render()
@@ -205,15 +195,15 @@ class ArPlayground: GdxArApplicationListener() {
                 transform[targetPos, targetDir] = targetScale
                 modelInstances.put(newAnchor.id, modelScene!!.modelInstance)
                 Pools.free(newAnchor)
-//                sceneManager.addScene(groundFloor)
+                sceneManager.addScene(groundFloor)
             }
-        } else {
+        }
+        else {
             val p: GdxPose? = arAPI.requestHitPlanePose(x, y, GdxPlaneType.ANY)
             if (p != null) {
                 targetDir.set(p.rotation)
                 targetPos.set(p.position)
-                modelScene!!.animations.playAll()
-                //modelScene!!.animations.
+                modelScene!!.animations.playAll()//TODO:
                 Pools.free(p)
             }
         }
