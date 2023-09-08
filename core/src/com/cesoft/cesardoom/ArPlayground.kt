@@ -31,12 +31,31 @@ import net.mgsx.gltf.scene3d.shaders.PBRShaderProvider
 import net.mgsx.gltf.scene3d.utils.IBLBuilder
 import net.mgsx.gltf.scene3d.utils.ShaderParser
 
+//TODO: Create a list of monsters
+//TODO: Detect if user pick on monster, and destroy it with some effect
+//TODO: Move monsters towards the user
+//TODO: Animate the monsters with a state machine...
+//TODO: Use ArCore Raw Depth
 class ArPlayground: GdxArApplicationListener() {
     private lateinit var sceneManager: CustomSceneManager
     private lateinit var directionalLight: CustomDirectionalShadowLight
+
     private var modelScene: Scene? = null
     private var groundFloor: Scene? = null
     private var modelAsset: SceneAsset? = null
+
+private var animation: AnimationComponent? = null
+private val animationName = "basic"
+    private val idle = Pair(10f, 110f-10)
+    private val walk = Pair(120f, 160f-120)
+    private val attack = Pair(420f, 500f-420)
+//        IDLE(10-110)
+//        WALK(120-160)
+//        SCREAM(170-270)
+//        JUMP WITH ROOT(280-330)
+//        JUMP(340-390)
+//        HEAD(400-415)
+//        ATACK SECTION(420-500)
 
     private val targetDir = Quaternion()
     private val targetPos = Vector3()
@@ -49,7 +68,7 @@ class ArPlayground: GdxArApplicationListener() {
     override fun create() {
         createEnvironment()
         createFloor()
-        createMonster()
+        loadMonster()
 
         //Setup some configs
         arAPI.setPowerSaveMode(false)
@@ -60,8 +79,24 @@ class ArPlayground: GdxArApplicationListener() {
     }
 
     //Load monster model
-    private fun createMonster() {
+    private fun loadMonster() {
         modelAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
+
+        //val animationController = AnimationController(ModelInstance(modelAsset!!.scene.model))
+        //animationController.allowSameAnimation = true
+
+//        modelInstance.animations.let { animations ->
+//            for (animation in animations) {
+//                Log.e("ArPlayground","loadMonster------------------anim22: ${animation.id}, ${animation.duration}, ${animation.nodeAnimations.size}")
+//            }
+//        }
+//
+//        val animations = modelAsset?.animations
+//        animations?.let { animations ->
+//            for (animation in animations) {
+//                Log.e("ArPlayground","loadMonster------------------anim: ${animation.id}, ${animation.duration}, ${animation.nodeAnimations.size}")
+//            }
+//        }
     }
 
     //Setup glTF rendering environment
@@ -167,6 +202,7 @@ class ArPlayground: GdxArApplicationListener() {
         }
         groundFloor?.modelInstance?.transform?.set(transform.translation, transform.rotation)
 
+        animation?.update(Gdx.graphics.deltaTime)
         sceneManager.update(Gdx.graphics.deltaTime)
         sceneManager.render()
     }
@@ -177,25 +213,35 @@ class ArPlayground: GdxArApplicationListener() {
         }
     }
 
+    private fun createMonster(position: Vector3, rotation: Quaternion, anchorId: Long) {
+
+        modelScene = Scene(modelAsset!!.scene)
+        sceneManager.addScene(modelScene)
+
+        //modelScene!!.animations.playAll()//TODO:
+
+        modelScene!!.modelInstance.transform.translate(position)
+        modelScene!!.modelInstance.transform.set(rotation)
+        targetPos.set(position)
+        targetDir.set(rotation)
+
+        transform[targetPos, targetDir] = targetScale
+        modelInstances.put(anchorId, modelScene!!.modelInstance)
+
+        val modelInstance = modelScene!!.modelInstance//ModelInstance(modelAsset!!.scene.model)
+        animation = AnimationComponent(modelInstance)
+        animation!!.animate(AnimationParams(animationName, 0, 1f, idle.first, idle.second))
+
+        sceneManager.addScene(groundFloor)
+    }
+
     private fun handleTouch(x: Float, y: Float) {
         if (modelScene == null) {
             val newAnchor: GdxAnchor? = arAPI.requestHitPlaneAnchor(x, y, GdxPlaneType.ANY)
             if (newAnchor != null) {
-                modelScene = Scene(modelAsset!!.scene)
-
-                //TODO:
-                modelScene!!.animations.playAll()
-
-                sceneManager.addScene(modelScene)
                 val p = newAnchor.gdxPose
-                modelScene!!.modelInstance.transform.translate(p.position)
-                modelScene!!.modelInstance.transform.set(p.rotation)
-                targetDir.set(p.rotation)
-                targetPos.set(p.position)
-                transform[targetPos, targetDir] = targetScale
-                modelInstances.put(newAnchor.id, modelScene!!.modelInstance)
+                createMonster(p.position, p.rotation, newAnchor.id)
                 Pools.free(newAnchor)
-                sceneManager.addScene(groundFloor)
             }
         }
         else {
@@ -203,7 +249,10 @@ class ArPlayground: GdxArApplicationListener() {
             if (p != null) {
                 targetDir.set(p.rotation)
                 targetPos.set(p.position)
-                modelScene!!.animations.playAll()//TODO:
+
+                //animation!!.animate(AnimationParams(animationName, 1, 1f, 120f, 160f))
+                //modelScene!!.animations.playAll()//TODO:
+
                 Pools.free(p)
             }
         }

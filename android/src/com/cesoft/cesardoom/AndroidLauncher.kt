@@ -25,13 +25,7 @@ class AndroidLauncher : FragmentActivity(), Callbacks {
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if(isGranted) {
-                val configuration = AndroidApplicationConfiguration()
-                configuration.useGL30 = true
-                configuration.a = 8
-                configuration.depth = 16
-                configuration.stencil = 8
-                configuration.numSamples = 2
-                launchAR(configuration)
+                launchAR()
             }
             else {
                 Toast.makeText(this, "Camera permission not granted!", Toast.LENGTH_SHORT).show()
@@ -45,7 +39,14 @@ class AndroidLauncher : FragmentActivity(), Callbacks {
         permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
-    private fun launchAR(configuration: AndroidApplicationConfiguration) {
+    private fun launchAR() {
+        val configuration = AndroidApplicationConfiguration()
+        //configuration.useGL30 = true
+        configuration.a = 8
+        configuration.depth = 16
+        configuration.stencil = 8
+        configuration.numSamples = 2
+
         val supportFragment = ARSupportFragment()
         supportFragmentManager.beginTransaction()
             .add(supportFragment, ARSupportFragment.TAG)
@@ -67,7 +68,7 @@ class AndroidLauncher : FragmentActivity(), Callbacks {
                 Toast.makeText(this, "ARCore is not supported", Toast.LENGTH_SHORT).show()
                 finish()
             }
-        }.exceptionally { ex: Throwable? ->
+        }.exceptionally { _: Throwable? ->
             removeSupportFragment()
             Toast.makeText(this, "Failed to load ARCore check errors", Toast.LENGTH_SHORT).show()
             finish()
