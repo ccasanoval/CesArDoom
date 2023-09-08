@@ -1,0 +1,104 @@
+buildscript {
+    ext.kotlinVersion = '1.9.10'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+
+    }
+}
+
+allprojects {
+    apply plugin: "eclipse"
+
+    version = '1.0'
+    ext {
+        appName = "CesArDoom"
+        gdxVersion = '1.12.0'
+        roboVMVersion = '2.3.19'
+        box2DLightsVersion = '1.5'
+        ashleyVersion = '1.7.4'
+        aiVersion = '1.8.2'
+        gdxControllersVersion = '2.2.1'
+
+        arCoreVersion = '1.35.0'        //Android com.google.ar:core
+        gdxARVersion = '0.1-SNAPSHOT'   //https://github.com/rednblackgames/gdx-ar (libGDX + AR)
+        gdxGltfVersion = '-SNAPSHOT'    //https://github.com/mgsx-dev/gdx-gltf  (glTF format)
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        google()
+        gradlePluginPortal()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+        maven { url "https://jitpack.io" }
+    }
+}
+
+project(":android") {
+    apply plugin: "android"
+    apply plugin: "kotlin-android"
+
+    configurations { natives }
+
+    dependencies {
+        implementation project(":core")
+        api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.gdx:gdx-bullet:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-bullet-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-bullet-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-bullet-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-bullet-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.ashley:ashley:$ashleyVersion"
+        api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+        api "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion"
+        api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
+        api "com.badlogicgames.box2dlights:box2dlights:$box2DLightsVersion"
+        api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+        api "com.google.ar:core:$arCoreVersion"
+        api "games.rednblack.gdxar:android:$gdxARVersion"
+    }
+}
+
+project(":core") {
+    apply plugin: "kotlin"
+
+
+    dependencies {
+        api "com.badlogicgames.gdx:gdx:$gdxVersion"
+        api "com.badlogicgames.gdx:gdx-bullet:$gdxVersion"
+        api "com.badlogicgames.ashley:ashley:$ashleyVersion"
+        api "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+        api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
+        api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+        api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        api "com.badlogicgames.box2dlights:box2dlights:$box2DLightsVersion"
+        api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+        api "com.github.mgsx-dev.gdx-gltf:gltf:$gdxGltfVersion"
+        api "games.rednblack.gdxar:core:$gdxARVersion"
+    }
+}
