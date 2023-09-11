@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Quaternion
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.LongMap
 import com.badlogic.gdx.utils.Pools
+import com.cesoft.cesardoom.monster.SpiderAnimation
 import games.rednblack.gdxar.GdxAnchor
 import games.rednblack.gdxar.GdxArApplicationListener
 import games.rednblack.gdxar.GdxFrame
@@ -44,19 +45,7 @@ class ArPlayground: GdxArApplicationListener() {
     private var groundFloor: Scene? = null
     private var modelAsset: SceneAsset? = null
 
-private var animation: AnimationComponent? = null
-private val animationName = "basic"
-private val speed = 1f
-    private val idle = Pair(10f/60f, 110f/60f)
-    private val walk = Pair(120f/60f, 160f/60f)
-    private val attack = Pair(420f/60f, 500f/60f)
-//        IDLE(10-110)
-//        WALK(120-160)
-//        SCREAM(170-270)
-//        JUMP WITH ROOT(280-330)
-//        JUMP(340-390)
-//        HEAD(400-415)
-//        ATACK SECTION(420-500)
+    private var spiderAnimation: SpiderAnimation? = null
 
     private val targetDir = Quaternion()
     private val targetPos = Vector3()
@@ -82,22 +71,6 @@ private val speed = 1f
     //Load monster model
     private fun loadMonster() {
         modelAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
-
-        //val animationController = AnimationController(ModelInstance(modelAsset!!.scene.model))
-        //animationController.allowSameAnimation = true
-
-//        modelInstance.animations.let { animations ->
-//            for (animation in animations) {
-//                Log.e("ArPlayground","loadMonster------------------anim22: ${animation.id}, ${animation.duration}, ${animation.nodeAnimations.size}")
-//            }
-//        }
-//
-//        val animations = modelAsset?.animations
-//        animations?.let { animations ->
-//            for (animation in animations) {
-//                Log.e("ArPlayground","loadMonster------------------anim: ${animation.id}, ${animation.duration}, ${animation.nodeAnimations.size}")
-//            }
-//        }
     }
 
     //Setup glTF rendering environment
@@ -203,7 +176,7 @@ private val speed = 1f
         }
         groundFloor?.modelInstance?.transform?.set(transform.translation, transform.rotation)
 
-        animation?.update(Gdx.graphics.deltaTime)
+        spiderAnimation?.update(Gdx.graphics.deltaTime)
         sceneManager.update(Gdx.graphics.deltaTime)
         sceneManager.render()
     }
@@ -215,11 +188,8 @@ private val speed = 1f
     }
 
     private fun createMonster(position: Vector3, rotation: Quaternion, anchorId: Long) {
-
         modelScene = Scene(modelAsset!!.scene)
         sceneManager.addScene(modelScene)
-
-        //modelScene!!.animations.playAll()//TODO:
 
         modelScene!!.modelInstance.transform.translate(position)
         modelScene!!.modelInstance.transform.set(rotation)
@@ -229,9 +199,9 @@ private val speed = 1f
         transform[targetPos, targetDir] = targetScale
         modelInstances.put(anchorId, modelScene!!.modelInstance)
 
-        val modelInstance = modelScene!!.modelInstance//ModelInstance(modelAsset!!.scene.model)
-        animation = AnimationComponent(modelInstance)
-        animation!!.animate(AnimationParams(animationName, -1, speed, walk.first, walk.second-walk.first))
+        val modelInstance = modelScene!!.modelInstance
+        spiderAnimation = SpiderAnimation(modelInstance)
+        spiderAnimation?.animate(SpiderAnimation.Type.Walk)
 
         sceneManager.addScene(groundFloor)
     }
@@ -251,8 +221,9 @@ private val speed = 1f
                 targetDir.set(p.rotation)
                 targetPos.set(p.position)
 
-                //animation!!.animate(AnimationParams(animationName, 1, 1f, 120f, 160f))
-                //modelScene!!.animations.playAll()//TODO:
+                spiderAnimation?.animate(SpiderAnimation.Type.Attack) {
+                    spiderAnimation?.animate(SpiderAnimation.Type.Walk, true)
+                }
 
                 Pools.free(p)
             }

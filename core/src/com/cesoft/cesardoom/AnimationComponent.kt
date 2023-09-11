@@ -12,7 +12,8 @@ data class AnimationParams(
     var speed: Float = 1f,
     var offset: Float = 0f,
     var duration: Float = -1f,
-    var transitionTime: Float = 0.5f
+    var transitionTime: Float = 0.5f,
+    var onEnd: () -> Unit,
 )
 
 class AnimationComponent(instance: ModelInstance) : Component {
@@ -30,8 +31,13 @@ class AnimationComponent(instance: ModelInstance) : Component {
             params.duration,
             params.loop,
             params.speed,
-            null,
-            params.transitionTime
+            object: AnimationController.AnimationListener {
+                override fun onEnd(animation: AnimationController.AnimationDesc?) {
+                    params.onEnd()
+                }
+                override fun onLoop(animation: AnimationController.AnimationDesc?) {}
+            },
+            params.transitionTime,
         )
     }
 
