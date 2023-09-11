@@ -14,15 +14,15 @@ class SpiderAnimation(
         animation.update(deltaTime)
     }
 
-    fun animate(type: Type, loop: Boolean = false, onEnd: () -> Unit = {}) {
+    fun animate(type: SpiderState, loop: Boolean = false, onEnd: () -> Unit = {}) {
         val time = when(type) {
-            Type.Attack -> attack
-            Type.Head -> head
-            Type.Idle -> idle
-            Type.Jump -> jump
-            Type.JumpRoot -> jumpRoot
-            Type.Scream -> scream
-            Type.Walk -> walk
+            SpiderState.Attack -> attack
+            SpiderState.Head -> head
+            SpiderState.Idle -> idle
+            SpiderState.Jump -> jump
+            SpiderState.JumpRoot -> jumpRoot
+            SpiderState.Scream -> scream
+            SpiderState.Walk -> walk
         }
         animation.animate(
             AnimationParams(
@@ -34,10 +34,9 @@ class SpiderAnimation(
                 0.5f,
                 onEnd,
             ),
-
         )
     }
-    enum class Type { Idle, Walk, Attack, Jump, JumpRoot, Scream, Head }
+
     companion object {
         private const val name = "basic"
         private const val speed = 1f
