@@ -3,8 +3,6 @@ package com.cesoft.cesardoom
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.Texture
-import com.badlogic.gdx.graphics.g3d.ModelInstance
-import com.badlogic.gdx.utils.LongMap
 import com.badlogic.gdx.utils.Pools
 import com.cesoft.cesardoom.monster.Spider
 import games.rednblack.gdxar.GdxAnchor
@@ -21,10 +19,9 @@ import net.mgsx.gltf.scene3d.shaders.PBRShaderProvider
 import net.mgsx.gltf.scene3d.utils.IBLBuilder
 import net.mgsx.gltf.scene3d.utils.ShaderParser
 
-//TODO: Move monsters towards the user: DEBUG: after relocatiing the directions is not Z !
+//TODO: If camera change position -> change spider direction
 //TODO: Create a list of monsters
 //TODO: Detect if user pick on monster, and destroy it with some effect
-//TODO: Animate the monsters with a state machine...
 //TODO: Add sound fx: scream, attack...
 //TODO: Use ArCore Raw Depth
 class ArPlayground: GdxArApplicationListener() {
@@ -33,12 +30,8 @@ class ArPlayground: GdxArApplicationListener() {
 
     private var spider: Spider? = null
 
-    private val modelInstances = LongMap<ModelInstance>()
-
     override fun create() {
         createEnvironment()
-
-        Spider.init()
 
         //Setup some configs
         arAPI.setPowerSaveMode(false)
@@ -116,15 +109,12 @@ class ArPlayground: GdxArApplicationListener() {
         }
 
         //Force update models based on the tracking anchor calculated by the framework
-        for(anchor in frame.anchors) {
-            val model = modelInstances[anchor.id]
-            model?.transform?.set(anchor.gdxPose.position, anchor.gdxPose.rotation)
-        }
-
-        //TODO: move monsters towards camera
-        arAPI.arCamera.position
-        arAPI.arCamera.near
-
+        // But to do this we should save the origin point and the offset of walking...
+//        for(anchor in frame.anchors) {
+//            if(spider?.anchorId == anchor.id) {
+//                spider?.relocate(anchor.gdxPose.position, anchor.gdxPose.rotation)
+//            }
+//        }
 
         spider?.update(Gdx.graphics.deltaTime)
         sceneManager.update(Gdx.graphics.deltaTime)
@@ -133,24 +123,23 @@ class ArPlayground: GdxArApplicationListener() {
 
     override fun render() {
         if (Gdx.input.isTouched) {
-            Log.e("Play", "render------------------${Gdx.input.x} / ${Gdx.input.y}")
+            //Log.e("Play", "render------------------${Gdx.input.x} / ${Gdx.input.y}")
             handleTouch(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
         }
     }
-
 
     private fun handleTouch(x: Float, y: Float) {
         if (spider == null) {
             val newAnchor: GdxAnchor? = arAPI.requestHitPlaneAnchor(x, y, GdxPlaneType.ANY)
             if (newAnchor != null) {
-                spider = Spider(sceneManager, newAnchor)
+                spider = Spider(sceneManager, newAnchor, arAPI.arCamera)
                 Pools.free(newAnchor)
             }
         }
         else {
             val pose: GdxPose? = arAPI.requestHitPlanePose(x, y, GdxPlaneType.ANY)
             if (pose != null) {
-                spider?.relocate(pose)
+                spider?.relocate(pose.position, pose.rotation)
                 Pools.free(pose)
             }
         }

@@ -2,6 +2,7 @@ package com.cesoft.cesardoom.monster
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.VertexAttributes
 import com.badlogic.gdx.graphics.g3d.Material
 import com.badlogic.gdx.graphics.g3d.ModelInstance
@@ -13,18 +14,17 @@ import com.badlogic.gdx.math.Vector3
 import com.cesoft.cesardoom.Log
 import com.cesoft.cesardoom.PBRShadowCatcherShaderProvider
 import games.rednblack.gdxar.GdxAnchor
-import games.rednblack.gdxar.GdxPose
 import net.mgsx.gltf.loaders.glb.GLBLoader
 import net.mgsx.gltf.scene3d.scene.Scene
 import net.mgsx.gltf.scene3d.scene.SceneAsset
 import net.mgsx.gltf.scene3d.scene.SceneManager
-import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
 class Spider(
     private val sceneManager: SceneManager,
     gdxAnchor: GdxAnchor,
+    private val camera: PerspectiveCamera,
 ) {
     private val builder = ModelBuilder()
     private lateinit var animation: SpiderAnimation
@@ -37,6 +37,7 @@ class Spider(
     private val targetScale = Vector3(1f, 1f, 1f)
 
     private var state: SpiderState = SpiderState.Idle
+    val anchorId = gdxAnchor.id
 
     init {
         val pose = gdxAnchor.gdxPose
@@ -53,12 +54,11 @@ class Spider(
         }
     }
 
-    fun relocate(pose: GdxPose) {
-        //Log.e("Spider", "relocate0----------$targetPos / $targetDir")
-        targetDir.set(pose.rotation)
-        targetPos.set(pose.position)
-        //Log.e("Spider", "relocate9----------$targetPos / $targetDir")
-        //TODO: update walking direction...
+    fun relocate(position: Vector3, rotation: Quaternion) {
+        targetDir.set(rotation)
+        targetPos.set(position)
+        setState(SpiderState.Scream, SpiderState.Walk)
+        //model?.transform?.set(anchor.gdxPose.position, anchor.gdxPose.rotation)
     }
 
     private fun createMonster(position: Vector3, rotation: Quaternion) {
@@ -71,10 +71,8 @@ class Spider(
         targetDir.set(rotation)
 
         transform[targetPos, targetDir] = targetScale
-        //modelInstances.put(anchorId, modelScene.modelInstance)
 
-        val modelInstance = modelScene.modelInstance
-        animation = SpiderAnimation(modelInstance)
+        animation = SpiderAnimation(modelScene.modelInstance)
         setState(SpiderState.Scream, SpiderState.Walk)
 
         createShadowFloor()
@@ -105,7 +103,7 @@ class Spider(
     }
 
     fun update(deltaTime: Float) {//Gdx.graphics.deltaTime
-
+        // Move towards camera
         if(state == SpiderState.Walk) {
             targetPos.z += cos(targetDir.yawRad) * deltaTime * speedFactor
             targetPos.x += sin(targetDir.yawRad) * deltaTime * speedFactor
@@ -113,19 +111,51 @@ class Spider(
 
         transform.lerp(targetPos, targetDir, targetScale, 0.1f)
         modelScene.let { modelScene ->
-            //modelScene.modelInstance.transform[transform.translation] = transform.rotation
             modelScene.modelInstance.transform?.set(transform.translation, transform.rotation)
             modelScene.modelInstance.transform.scale(scale, scale, scale)
         }
         shadowScene.modelInstance?.transform?.set(transform.translation, transform.rotation)
 
         animation.update(Gdx.graphics.deltaTime)
+        updateState()
+    }
+
+    private fun updateState() {
+        val distance = Vector3.dst(
+            targetPos.x, 0f, targetPos.z,
+            0f, 0f, 0f,
+        )
+        Log.e("Spider", "*---------------------- $distance / $state")
+//        val distance1 = Vector3.dst(
+//            targetPos.x, 0f, targetPos.z,
+//            camera.position.x, 0f, camera.position.z,
+//        )
+//        Log.e("Spider", "*---------------------- $distance1 / ${camera.position}")
+        //Maybe we need to recreate the spider each meter ...
+        when(state) {
+            SpiderState.Scream -> {}
+            SpiderState.Attack -> {
+                if(distance > attackDistance) {
+                    setState(SpiderState.Scream, SpiderState.Attack)
+                }
+            }
+            SpiderState.Head -> {}
+            SpiderState.Jump -> {}
+            SpiderState.JumpRoot -> {}
+            SpiderState.Idle -> {}
+            SpiderState.Walk -> {
+                if(distance < attackDistance) {
+                    setState(SpiderState.Scream, SpiderState.Attack)
+                }
+            }
+        }
     }
 
     companion object {
-        fun init() {}
+        //fun init() {}
         private val modelAsset: SceneAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
-        private const val speedFactor = 1/30f
         private const val scale = 0.015f
+        private const val speedFactor = 1/20f
+        private const val attackDistance = 0.15f
     }
 }
