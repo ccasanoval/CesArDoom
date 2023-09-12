@@ -54,10 +54,10 @@ class Spider(
     }
 
     fun relocate(pose: GdxPose) {
-        Log.e("Spider", "relocate0----------$targetPos / $targetDir")
+        //Log.e("Spider", "relocate0----------$targetPos / $targetDir")
         targetDir.set(pose.rotation)
         targetPos.set(pose.position)
-        Log.e("Spider", "relocate9----------$targetPos / $targetDir")
+        //Log.e("Spider", "relocate9----------$targetPos / $targetDir")
         //TODO: update walking direction...
     }
 
@@ -104,11 +104,11 @@ class Spider(
         sceneManager.addScene(shadowScene)
     }
 
-    fun update(deltaTime: Float) {
-        //TODO:!!!
+    fun update(deltaTime: Float) {//Gdx.graphics.deltaTime
+
         if(state == SpiderState.Walk) {
-            targetPos.z += sin(abs(targetDir.angle)) * deltaTime * speedFactor//Gdx.graphics.deltaTime/25
-            targetPos.x += cos(abs(targetDir.angle)) * deltaTime * speedFactor//Gdx.graphics.deltaTime/25
+            targetPos.z += cos(targetDir.yawRad) * deltaTime * speedFactor
+            targetPos.x += sin(targetDir.yawRad) * deltaTime * speedFactor
         }
 
         transform.lerp(targetPos, targetDir, targetScale, 0.1f)
@@ -125,7 +125,7 @@ class Spider(
     companion object {
         fun init() {}
         private val modelAsset: SceneAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
-        private const val speedFactor = 1/25f
+        private const val speedFactor = 1/30f
         private const val scale = 0.015f
     }
 }
