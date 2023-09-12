@@ -11,9 +11,14 @@ import com.badlogic.gdx.graphics.g3d.utils.BaseAnimationController
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.math.Quaternion
 import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.utils.Pools
 import com.cesoft.cesardoom.Log
 import com.cesoft.cesardoom.PBRShadowCatcherShaderProvider
+import games.rednblack.gdxar.GdxAR
 import games.rednblack.gdxar.GdxAnchor
+import games.rednblack.gdxar.GdxArApplicationListener
+import games.rednblack.gdxar.GdxPlaneType
+import games.rednblack.gdxar.GdxPose
 import net.mgsx.gltf.loaders.glb.GLBLoader
 import net.mgsx.gltf.scene3d.scene.Scene
 import net.mgsx.gltf.scene3d.scene.SceneAsset
@@ -23,10 +28,9 @@ import kotlin.math.sin
 
 class Spider(
     private val sceneManager: SceneManager,
-    gdxAnchor: GdxAnchor,
-    private val camera: PerspectiveCamera,
+    private val gdxAnchor: GdxAnchor,
+    //private val camera: PerspectiveCamera,
 ) {
-    private val builder = ModelBuilder()
     private lateinit var animation: SpiderAnimation
     private lateinit var modelScene: Scene
     private lateinit var shadowScene: Scene
@@ -34,7 +38,13 @@ class Spider(
     private val transform = BaseAnimationController.Transform()
     private val targetDir = Quaternion()
     private val targetPos = Vector3()
+    private val targetOffset = Vector3()
     private val targetScale = Vector3(1f, 1f, 1f)
+
+    private fun getPosition() = Vector3(
+        targetPos.x + targetOffset.x,
+        targetPos.y + targetOffset.y,
+        targetPos.z + targetOffset.z)
 
     private var state: SpiderState = SpiderState.Idle
     val anchorId = gdxAnchor.id
@@ -57,6 +67,7 @@ class Spider(
     fun relocate(position: Vector3, rotation: Quaternion) {
         targetDir.set(rotation)
         targetPos.set(position)
+        targetOffset.set(0f,0f,0f)
         setState(SpiderState.Scream, SpiderState.Walk)
         //model?.transform?.set(anchor.gdxPose.position, anchor.gdxPose.rotation)
     }
@@ -80,6 +91,7 @@ class Spider(
 
     //Create a plane model for the virtual ground floor, need to show shadows
     private fun createShadowFloor() {
+        val builder = ModelBuilder()
         builder.begin()
         val groundMaterial = Material(BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA))
         val meshPartBuilder = builder.part(
@@ -105,11 +117,11 @@ class Spider(
     fun update(deltaTime: Float) {//Gdx.graphics.deltaTime
         // Move towards camera
         if(state == SpiderState.Walk) {
-            targetPos.z += cos(targetDir.yawRad) * deltaTime * speedFactor
-            targetPos.x += sin(targetDir.yawRad) * deltaTime * speedFactor
+            targetOffset.z += cos(targetDir.yawRad) * deltaTime * speedFactor
+            targetOffset.x += sin(targetDir.yawRad) * deltaTime * speedFactor
         }
 
-        transform.lerp(targetPos, targetDir, targetScale, 0.1f)
+        transform.lerp(getPosition(), targetDir, targetScale, 0.1f)
         modelScene.let { modelScene ->
             modelScene.modelInstance.transform?.set(transform.translation, transform.rotation)
             modelScene.modelInstance.transform.scale(scale, scale, scale)
@@ -121,11 +133,20 @@ class Spider(
     }
 
     private fun updateState() {
+        val pos = getPosition()
+
+        val pos1 = gdxAnchor.gdxPose.position
+
+        val distance1 = Vector3.dst(
+            pos1.x, 0f, pos1.z,
+            pos.x, 0f, pos.z,
+        )
+
         val distance = Vector3.dst(
-            targetPos.x, 0f, targetPos.z,
+            pos.x, 0f, pos.z,
             0f, 0f, 0f,
         )
-        Log.e("Spider", "*---------------------- $distance / $state")
+        Log.e("Spider", "*---------------------- $distance / $state ---- $distance1 / ${gdxAnchor.gdxPose.rotation.yaw}")
 //        val distance1 = Vector3.dst(
 //            targetPos.x, 0f, targetPos.z,
 //            camera.position.x, 0f, camera.position.z,
@@ -152,7 +173,6 @@ class Spider(
     }
 
     companion object {
-        //fun init() {}
         private val modelAsset: SceneAsset = GLBLoader().load(Gdx.files.internal("spider.glb"))
         private const val scale = 0.015f
         private const val speedFactor = 1/20f

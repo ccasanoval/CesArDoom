@@ -122,8 +122,10 @@ class ArPlayground: GdxArApplicationListener() {
     }
 
     override fun render() {
+        //TODO: I wan the spider to follow the player (the camera position in scene)
+        //If i could get the position of the spider in screen so to recreate in case camera change position.... as if it was a touch
         if (Gdx.input.isTouched) {
-            //Log.e("Play", "render------------------${Gdx.input.x} / ${Gdx.input.y}")
+            Log.e("Play", "touch------------------INPUT: ${Gdx.input.x} / ${Gdx.input.y}")
             handleTouch(Gdx.input.x.toFloat(), Gdx.input.y.toFloat())
         }
     }
@@ -132,8 +134,8 @@ class ArPlayground: GdxArApplicationListener() {
         if (spider == null) {
             val newAnchor: GdxAnchor? = arAPI.requestHitPlaneAnchor(x, y, GdxPlaneType.ANY)
             if (newAnchor != null) {
-                spider = Spider(sceneManager, newAnchor, arAPI.arCamera)
-                Pools.free(newAnchor)
+                spider = Spider(sceneManager, newAnchor)//, arAPI.arCamera)
+                //Pools.free(newAnchor)---> Wanna keep using its position inside Spider...
             }
         }
         else {

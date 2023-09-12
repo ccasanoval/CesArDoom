@@ -54,6 +54,6 @@ class SpiderAnimation(
         val jumpRoot = Pair(280 / 60f, 330 / 60f)
         val jump = Pair(340 / 60f, 390 / 60f)
         val head = Pair(400 / 60f, 415 / 60f)
-        val attack = Pair(420f / 60f, 500f / 60f)
+        val attack = Pair(442f / 60f, 500f / 60f)//TODO 420...
     }
 }
